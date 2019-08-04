@@ -1,0 +1,10 @@
+A faire
+*******
+-Création d'un fichier avec les résultat. Il y a un début de code dans projet.c
+-Affichage du podium. Il faut récuperer les 3 premieres voitures
+
+
+A améliorer
+***********
+-Actuellement, certains temps sont les même durant la génération aléatoire. 
+Il est possible de rendre 100% aléatoire en réduisant la vitesse de génération mais ce n'est pas une bonne solution.
