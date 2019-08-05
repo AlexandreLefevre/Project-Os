@@ -507,6 +507,21 @@ void ligneDepart(struct voiture automobile[20]){
 	}
 }
 
+
+
+void podium(){
+	printf("%c[2J", 27);																	//Clear de la console
+	printf("                     ╔════════════════════╗\n                     ║  \033[01;31mWork in Progress\033[0m  ║\n                     ║         #1         ║\n╔════════════════════╣                    ║\n║  \033[01;31mWork in Progress\033[0m  ║                    ║\n║         #2         ║                    ╠════════════════════╗\n║                    ║                    ║  \033[01;31mWork in Progress\033[0m  ║\n║                    ║                    ║         #3         ║\n╚════════════════════╩════════════════════╩════════════════════╝\n");
+
+}
+
+
+
+
+
+
+
+
 int PromptEtape(int etape){
 	char choixPrompt;
 	printf("%c[2J", 27);																	//Clear de la console
@@ -563,7 +578,7 @@ int PromptEtape(int etape){
 		case 3 : printf("\033[01;31mCourse annulée.\033[0m\n");
 			break;			
 		}
-		usleep(5000000);
+		usleep(1000000);
 		return 0;
 	}
 	else {
@@ -577,7 +592,7 @@ int PromptEtape(int etape){
 		case 3 : printf("\033[01;31mCourse annulée.\033[0m\n");
 			break;			
 		}
-		usleep(5000000);  
+		usleep(1000000);  
 		return 0;  
 	}
 }
@@ -605,21 +620,21 @@ int main (void){
 	int reponsePromptEssai = PromptEtape(1);
 	if (reponsePromptEssai == 1){	
 		sleep(5);
-		choixCourse(20,-1,5400,tri,1); //Essais libres | Vendredi matin | P1
+		choixCourse(20,-1,5400,tri,1); //Essais libres - P1
 		sleep(5);
-		choixCourse(20,-1,5400,tri,2); //Essais libres | Vendredi après-midi | P2
+		choixCourse(20,-1,5400,tri,2); //Essais libres - P2
 		sleep(5);
-		choixCourse(20,-1,3600,tri,3); //Essais libres | Samedi matin | P3
+		choixCourse(20,-1,3600,tri,3); //Essais libres - P3
 		sleep(5);
 	}
 	int reponsePromptQualif = PromptEtape(2);
 	if (reponsePromptQualif == 1){
 		sleep(5);
-		choixCourse(20,-1,1080,tri,4); //Qualification | Samedi après-midi | Q1
+		choixCourse(20,-1,1080,tri,4); //Qualification - Q1
 		sleep(5);
-		choixCourse(15,-1,900,tri,5);  //Qualification | Samedi après-midi | Q2
+		choixCourse(15,-1,900,tri,5);  //Qualification - Q2
 		sleep(5);
-		choixCourse(10,-1,720,tri,6);  //Qualification | Samedi après-midi | Q3
+		choixCourse(10,-1,720,tri,6);  //Qualification - Q3
 		sleep(5);
 	}
 	int reponsePromptCourse = PromptEtape(3);
@@ -627,9 +642,10 @@ int main (void){
 		sleep(5);
 		ligneDepart(tri);
 		sleep(10);
-		choixCourse(20,1,(tempsUnTour*nombreTourCourseFinale),tri,7);  //Course | Dimanche | R
+		choixCourse(20,1,(tempsUnTour*nombreTourCourseFinale),tri,7);  //Course
 		sleep(5);
 	}
-	printf("%c[2J", 27);																	//Clear de la console
+	printf("%c[2J", 27);	
+	if (reponsePromptCourse == 1) {podium();}																//Clear de la console
 	printf("\033[01;35mSimulation terminée\033[0m\n");
 }
