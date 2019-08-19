@@ -420,7 +420,7 @@ void choixCourse(int nombreVoiture,int tri,double tempsCourse,struct voiture pil
 }
 
 
-int creationFichier(int etape, int nombreVoiture,struct voiture pilotes[20]){
+int creationFichier(int etape, int nbrVoiture,struct voiture pilotes[20]){
 	FILE* fichier = NULL;
 	switch (etape){									//Choix du fichier selon l'étape
 		case 1 : fichier = fopen("P1.txt", "w+");
@@ -439,8 +439,6 @@ int creationFichier(int etape, int nombreVoiture,struct voiture pilotes[20]){
 		break;
 	}
 	if (fichier != NULL){
- 	//Début de l'écriture  dans le fichier
-	fprintf(fichier,"test");
  	//trier(trieur);
 	double meilleurS1 = 9999999.0;
 	double meilleurS2 = 9999999.0;
@@ -451,29 +449,28 @@ int creationFichier(int etape, int nombreVoiture,struct voiture pilotes[20]){
 	int idS2;
 	int idS3;
 	int idTour;
-	fprintf(fichier,"%c[2J", 27);																	//Clear de la console
-	fprintf(fichier,"                     ╔════════════════════════════════════════════════════════════════════════════════════════════╗\n");
+	fprintf(fichier,"                     ╔════════════════════════════════════════════════════════════════════════════════════════════╗\r\n");
 	switch(etape)
 	{
-		case 1: fprintf(fichier,"                     ║                        \033[01;36mSéance d'essais libres du vendredi matin | P1\033[0m                       ║\n");
+		case 1: fprintf(fichier,"                     ║                        Séance d'essais libres du vendredi matin | P1                       ║\r\n");
 			break;
-		case 2 :fprintf(fichier,"                     ║                     \033[01;36mSéance d'essais libres du vendredi après-midi | P2\033[0m                     ║\n");
+		case 2 :fprintf(fichier,"                     ║                     Séance d'essais libres du vendredi après-midi | P2                     ║\r\n");
 			break;
-		case 3 :fprintf(fichier,"                     ║                         \033[01;36mSéance d'essais libres du samedi matin | P3\033[0m                        ║\n");
+		case 3 :fprintf(fichier,"                     ║                         Séance d'essais libres du samedi matin | P3                        ║\r\n");
 			break;
-		case 4 :fprintf(fichier,"                     ║                     \033[01;36mSéance de qualifications du samedi après-midi | Q1\033[0m                     ║\n");
+		case 4 :fprintf(fichier,"                     ║                     Séance de qualifications du samedi après-midi | Q1                     ║\r\n");
 			break;	
-		case 5 :fprintf(fichier,"                     ║                     \033[01;36mSéance de qualifications du samedi après-midi | Q2\033[0m                     ║\n");
+		case 5 :fprintf(fichier,"                     ║                     Séance de qualifications du samedi après-midi | Q2                     ║\r\n");
 			break;	
-		case 6 :fprintf(fichier,"                     ║                     \033[01;36mSéance de qualifications du samedi après-midi | Q3\033[0m                     ║\n");
+		case 6 :fprintf(fichier,"                     ║                     Séance de qualifications du samedi après-midi | Q3                     ║\r\n");
 			break;			
-		case 7 :fprintf(fichier,"                     ║                                \033[01;36mCourse du dimanche après-midi\033[0m                               ║\n");
+		case 7 :fprintf(fichier,"                     ║                                Course du dimanche après-midi                               ║\r\n");
 			break;			
 	}
-	fprintf(fichier,"╔════════╦═══════════╬═══════════╦═══════════╦══════════╦═════════════╦═════════════╦═════════════╦═══════════════╬══════╦═══════╦═════════╗\n");
-	fprintf(fichier,"║ Numéro ║ Secteur 1 ║ Secteur 2 ║ Secteur 3 ║   Tour   ║ Meilleur S1 ║ Meilleur S2 ║ Meilleur S3 ║ Meilleur Tour ║ Tour ║ Arrêt ║ Abandon ║\n");
-	fprintf(fichier,"╠════════╬═══════════╬═══════════╬═══════════╬══════════╬═════════════╬═════════════╬═════════════╬═══════════════╬══════╬═══════╬═════════╣\n");
-	for(j = 0; j < nombreVoiture ; j++){
+	fprintf(fichier,"╔════════╦═══════════╬═══════════╦═══════════╦══════════╦═════════════╦═════════════╦═════════════╦═══════════════╬══════╦═══════╦═════════╗\r\n");
+	fprintf(fichier,"║ Numéro ║ Secteur 1 ║ Secteur 2 ║ Secteur 3 ║   Tour   ║ Meilleur S1 ║ Meilleur S2 ║ Meilleur S3 ║ Meilleur Tour ║ Tour ║ Arrêt ║ Abandon ║\r\n");
+	fprintf(fichier,"╠════════╬═══════════╬═══════════╬═══════════╬══════════╬═════════════╬═════════════╬═════════════╬═══════════════╬══════╬═══════╬═════════╣\r\n");
+	for(j = 0; j < nbrVoiture ; j++){
 		if (pilotes[j].ID < 10){
 			fprintf(fichier,"║    %d   ",pilotes[j].ID);
 		}
@@ -525,12 +522,13 @@ int creationFichier(int etape, int nombreVoiture,struct voiture pilotes[20]){
 			fprintf(fichier,"║   0   ");
 		}
 		if(pilotes[j].estCrash == 1){
-			fprintf(fichier,"║    \033[01;31mX\033[0m    ║\n");
+			fprintf(fichier,"║    X    ║\r\n");
 	
 		}else{
-			fprintf(fichier,"║         ║\n");
+			fprintf(fichier,"║         ║\r\n");
 		}			
 	}
+	fprintf(fichier,"╚════════╩═══════════╩═══════════╩═══════════╩══════════╩═════════════╩═════════════╩═════════════╩═══════════════╩══════╩═══════╩═════════╝\n");
 	fclose(fichier);
  	}
 	return 0;
@@ -727,10 +725,10 @@ int main (void){
 		creationFichier(4,20,tri);
 		sleep(5);
 		choixCourse(15,-1,900,tri,5);  //Qualification - Q2
-		creationFichier(5,20,tri);
+		creationFichier(5,15,tri);
 		sleep(5);
 		choixCourse(10,-1,720,tri,6);  //Qualification - Q3
-		creationFichier(6,20,tri);
+		creationFichier(6,10,tri);
 		sleep(5);
 	}
 	int reponsePromptCourse = PromptEtape(3);
