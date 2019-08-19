@@ -76,122 +76,126 @@ int crash(){
 	}
 }
 		
-
 void choixCourse(int nombreVoiture,int tri,double tempsCourse,struct voiture pilotes[20],int typeCourse){
-		int i ;
-		int shmId;
-		int compteur;
-		int semId;
-		struct sembuf operation;
-		int nbLecteur;
-		key_t key = ftok("/dev/null", 7);
-		struct voiture *circuit;
-		shmId = shmget(key, 20*sizeof(struct voiture), IPC_CREAT|0666);
-		if(shmId == -1){
-			printf("shmId = -1 ");
-			exit(1);
+	int i ;
+	int shmId;
+	int compteur;
+	int semId;
+	struct sembuf operation;
+	int nbLecteur;
+	key_t key = ftok("/dev/null", 7);
+	struct voiture *circuit;
+	shmId = shmget(key, 20*sizeof(struct voiture), IPC_CREAT|0666);
+
+	if(shmId == -1){
+		printf("shmId = -1 ");
+		exit(1);
+	}
+
+	circuit = shmat(shmId,0,0);
+
+	if(circuit == (struct voiture*)-1){
+		printf("shmat = -1");
+		exit(1);
+	}
+
+	void initSem(){
+		key_t semCle;
+		semId = semget(semCle, 2, IPC_CREAT | 0666);
+		if( semCle < 0 )
+		{
+			printf("Erreur semid\n");
+			exit(0);
 		}
-		circuit = shmat(shmId,0,0);
-		if(circuit == (struct voiture*)-1){
-			printf("shmat = -1");
-			exit(1);
+		semctl(semId, 0, SETVAL, 1);
+		semctl(semId, 1, SETVAL, 1);
+	}
+
+	void attendre(int i){
+		operation.sem_num = i;
+		operation.sem_op = -1;
+		operation.sem_flg = SEM_UNDO;
+		semop(semId, &operation, 1);
+	}
+
+	void signale(int i){
+		operation.sem_num = i;
+		operation.sem_op = 1;
+		operation.sem_flg = SEM_UNDO;
+		semop(semId, &operation, 1);
+	}
+
+	void commencerLecture(){
+		attendre(0);
+		nbLecteur++;
+		if (nbLecteur == 1) {
+			attendre(1);
 		}
-		 
-		void initSem(){
-			key_t semCle;
-			semId = semget(semCle, 2, IPC_CREAT | 0666);
-			if( semCle < 0 )
-			{
-				printf("Erreur semid\n");
-				exit(0);
+		signale(0);
+	}
+
+	void arreterLecture(){
+		attendre(0);
+		nbLecteur--;
+		if (nbLecteur == 0) {
+			signale(1);
+		}
+		signale(0);
+	}
+
+	initSem();
+
+	void trier(int param ){
+		struct voiture tempo; //[1]
+		int a=0;
+		int b=0;
+		commencerLecture();
+		memcpy(pilotes,circuit,nombreVoiture*sizeof(struct voiture));	
+		arreterLecture();	
+		if(param <= 0 ){ //trier voiture en fonction de leur meilleur tour
+			for( a = 0; a < nombreVoiture ; a++){
+				for( b = 0; b < nombreVoiture - 1 ; b++){
+					if(pilotes[b].meilleurTour > pilotes[b+1].meilleurTour){
+						tempo = pilotes[b+1];
+						pilotes[b+1] = pilotes[b];
+						pilotes[b] = tempo;
+				}		
 			}
-			semctl(semId, 0, SETVAL, 1);
-			semctl(semId, 1, SETVAL, 1);
 		}
-
-		void attendre(int i){
-			operation.sem_num = i;
-			operation.sem_op = -1;
-			operation.sem_flg = SEM_UNDO;
-			semop(semId, &operation, 1);
-		}
-
-		void signale(int i){
-			operation.sem_num = i;
-			operation.sem_op = 1;
-			operation.sem_flg = SEM_UNDO;
-			semop(semId, &operation, 1);
-		}
-
-		void commencerLecture(){
-			attendre(0);
-			nbLecteur++;
-			if (nbLecteur == 1) {
-				attendre(1);
-			}
-			signale(0);
-		}
-
-		void arreterLecture(){
-			attendre(0);
-			nbLecteur--;
-			if (nbLecteur == 0) {
-				signale(1);
-			}
-			signale(0);
-		}
-		initSem();
-		void trier(int param ){
-			struct voiture tempo; //[1]
-			int a=0;
-			int b=0;
-			commencerLecture();
-			memcpy(pilotes,circuit,nombreVoiture*sizeof(struct voiture));	
-			arreterLecture();	
-			if(param <= 0 ){ //trier voiture en fonction de leur meilleur tour
-				for( a = 0; a < nombreVoiture ; a++){
-					for( b = 0; b < nombreVoiture - 1 ; b++){
-						if(pilotes[b].meilleurTour > pilotes[b+1].meilleurTour){
+		}else{//trier en fonction du numéro de tour
+			for( a = 0; a < nombreVoiture ; a++){
+				for( b = 0; b < nombreVoiture - 1; b++){
+					if(pilotes[b].numeroTour < pilotes[b+1].numeroTour){
+						tempo = pilotes[b+1];
+						pilotes[b+1] = pilotes[b];
+						pilotes[b] = tempo;
+					}else if(pilotes[b].numeroTour == pilotes[b+1].numeroTour){
+						if(pilotes[b].tour > pilotes[b+1].tour){
 							tempo = pilotes[b+1];
 							pilotes[b+1] = pilotes[b];
 							pilotes[b] = tempo;
-					}		
+						}
+					}				
 				}
 			}
-			}else{//trier en fonction du numéro de tour
-				for( a = 0; a < nombreVoiture ; a++){
-					for( b = 0; b < nombreVoiture - 1; b++){
-						if(pilotes[b].numeroTour < pilotes[b+1].numeroTour){
-							tempo = pilotes[b+1];
-							pilotes[b+1] = pilotes[b];
-							pilotes[b] = tempo;
-						}else if(pilotes[b].numeroTour == pilotes[b+1].numeroTour){
-							if(pilotes[b].tour > pilotes[b+1].tour){
-								tempo = pilotes[b+1];
-								pilotes[b+1] = pilotes[b];
-								pilotes[b] = tempo;
-							}
-						}				
-					}
-				}
-			}
-		
 		}
-		void affichage(int trieur){
-			trier(trieur);
-			double meilleurS1 = 9999999.0;
-			double meilleurS2 = 9999999.0;
-			double meilleurS3 = 9999999.0;
-			double meilleurTour = 99999.0;
-			int j;
-			int idS1;
-			int idS2;
-			int idS3;
-			int idTour;
-			printf("%c[2J", 27);																	//Clear de la console
-			printf("                     ╔════════════════════════════════════════════════════════════════════════════════════════════╗\n");
-			switch(typeCourse)
-			{
+	}
+
+	void affichage(int trieur){
+		trier(trieur);
+		double meilleurS1 = 9999999.0;
+		double meilleurS2 = 9999999.0;
+		double meilleurS3 = 9999999.0;
+		double meilleurTour = 99999.0;
+		int j;
+		int idS1;
+		int idS2;
+		int idS3;
+		int idTour;
+		printf("%c[2J", 27);																	//Clear de la console
+		printf("                     ╔════════════════════════════════════════════════════════════════════════════════════════════╗\n");
+		switch(typeCourse)
+		{
 			case 1: printf("                     ║                        \033[01;36mSéance d'essais libres du vendredi matin | P1\033[0m                       ║\n");
 				break;
 			case 2 :printf("                     ║                     \033[01;36mSéance d'essais libres du vendredi après-midi | P2\033[0m                     ║\n");
@@ -206,245 +210,331 @@ void choixCourse(int nombreVoiture,int tri,double tempsCourse,struct voiture pil
 				break;			
 			case 7 :printf("                     ║                                \033[01;36mCourse du dimanche après-midi\033[0m                               ║\n");
 				break;			
-			}
-			printf("╔════════╦═══════════╬═══════════╦═══════════╦══════════╦═════════════╦═════════════╦═════════════╦═══════════════╬══════╦═══════╦═════════╗\n");
-			printf("║ Numéro ║ Secteur 1 ║ Secteur 2 ║ Secteur 3 ║   Tour   ║ Meilleur S1 ║ Meilleur S2 ║ Meilleur S3 ║ Meilleur Tour ║ Tour ║ Arrêt ║ Abandon ║\n");
-			printf("╠════════╬═══════════╬═══════════╬═══════════╬══════════╬═════════════╬═════════════╬═════════════╬═══════════════╬══════╬═══════╬═════════╣\n");
-			for(j = 0; j < nombreVoiture ; j++){
-				if (pilotes[j].ID < 10){
-					printf("║    %d   ",pilotes[j].ID);
-				}
-				else {
-					printf("║   %d   ",pilotes[j].ID);
-				}
-				if (pilotes[j].S1 == 0){
-					printf("║    ...    ");
-				}
-				else {
-					printf("║   %.3f  ",pilotes[j].S1);
-				}
-				if (pilotes[j].S2 == 0){
-					printf("║    ...    ");
-				}
-				else {
-					printf("║   %.3f  ",pilotes[j].S2);
-				}
-				if (pilotes[j].S3 == 0){
-					printf("║    ...    ");
-				}
-				else {
-					printf("║   %.3f  ",pilotes[j].S3);
-				}
-				if (pilotes[j].tour == 0){
-					printf("║    ...   ");
-				}
-				else if (pilotes[j].tour < 100.000){
-					printf("║   %.3f ",pilotes[j].tour);
-				}
-				else {
-					printf("║  %.3f ",pilotes[j].tour);
-				}
-				printf("║    %.3f   ",pilotes[j].meilleurS1);
-				printf("║    %.3f   ",pilotes[j].meilleurS2);
-				printf("║    %.3f   ",pilotes[j].meilleurS3);
-				printf("║     %.3f   ",pilotes[j].meilleurTour);
-
-				if (pilotes[j].numeroTour < 10){
-					printf("║   %i  ",pilotes[j].numeroTour);
-				}
-				else {
-					printf("║  %i  ",pilotes[j].numeroTour);
-				}
-				if(pilotes[j].estPit != 0){
-					printf("║   %d   ",pilotes[j].estPit);
-			
-				}else{
-					printf("║   0   ");
-				}
-				if(pilotes[j].estCrash == 1){
-					printf("║    \033[01;31mX\033[0m    ║\n");
-			
-				}else{
-					printf("║         ║\n");
-				}			
-			}
-			printf("╚════════╩═══════════╩═══════════╩═══════════╩══════════╩═════════════╩═════════════╩═════════════╩═══════════════╩══════╩═══════╩═════════╝\n");
-			for(j = 0; j<  nombreVoiture ; j++){
-				
-				if(meilleurS1 > pilotes[j].meilleurS1){
-					idS1 = pilotes[j].ID;
-					meilleurS1 = pilotes[j].meilleurS1;
-				}
-				if(meilleurS2 > pilotes[j].meilleurS2){
-					idS2= pilotes[j].ID;
-					meilleurS2 = pilotes[j].meilleurS2;
-				}
-				if(meilleurS3 > pilotes[j].meilleurS3){
-					idS3 = pilotes[j].ID;
-					meilleurS3 = pilotes[j].meilleurS3;
-				}
-				if(meilleurTour > pilotes[j].meilleurTour){
-					idTour = pilotes[j].ID;
-					meilleurTour = pilotes[j].meilleurTour;
-				}
-			}
-			printf("╔════════════════════╦════╦═══════════╗\n");
-			if (idS1 < 10){
-				printf("║ Meilleur Secteur 1 ║  %d ║   \033[01;33m%.3f\033[0m  ║\n",idS1,meilleurS1);
-			}
-			else {
-				printf("║ Meilleur Secteur 1 ║ %d ║   \033[01;33m%.3f\033[0m  ║\n",idS1,meilleurS1);
-			}
-			if (idS2 < 10){
-				printf("║ Meilleur Secteur 2 ║  %d ║   \033[01;33m%.3f\033[0m  ║\n",idS2,meilleurS2);
-			}
-			else {
-				printf("║ Meilleur Secteur 2 ║ %d ║   \033[01;33m%.3f\033[0m  ║\n",idS2,meilleurS2);
-			}
-			if (idS3 < 10){
-				printf("║ Meilleur Secteur 3 ║  %d ║   \033[01;33m%.3f\033[0m  ║\n",idS3,meilleurS3);
-			}
-			else {
-				printf("║ Meilleur Secteur 3 ║ %d ║   \033[01;33m%.3f\033[0m  ║\n",idS3,meilleurS3);
-			}
-			if (idTour < 10){
-				printf("║    Meilleur Tour   ║  %d ║  \033[01;33m%.3f\033[0m  ║\n",idTour,meilleurTour);
-			}
-			else {
-				printf("║    Meilleur Tour   ║ %d ║  \033[01;33m%.3f\033[0m  ║\n",idTour,meilleurTour);
-			}
-			printf("╚════════════════════╩════╩═══════════╝\n");
 		}
-		for(i=0;i < nombreVoiture;i++){
+		printf("╔════════╦═══════════╬═══════════╦═══════════╦══════════╦═════════════╦═════════════╦═════════════╦═══════════════╬══════╦═══════╦═════════╗\n");
+		printf("║ Numéro ║ Secteur 1 ║ Secteur 2 ║ Secteur 3 ║   Tour   ║ Meilleur S1 ║ Meilleur S2 ║ Meilleur S3 ║ Meilleur Tour ║ Tour ║ Arrêt ║ Abandon ║\n");
+		printf("╠════════╬═══════════╬═══════════╬═══════════╬══════════╬═════════════╬═════════════╬═════════════╬═══════════════╬══════╬═══════╬═════════╣\n");
+		for(j = 0; j < nombreVoiture ; j++){
+			if (pilotes[j].ID < 10){
+				printf("║    %d   ",pilotes[j].ID);
+			}
+			else {
+				printf("║   %d   ",pilotes[j].ID);
+			}
+			if (pilotes[j].S1 == 0){
+				printf("║    ...    ");
+			}
+			else {
+				printf("║   %.3f  ",pilotes[j].S1);
+			}
+			if (pilotes[j].S2 == 0){
+				printf("║    ...    ");
+			}
+			else {
+				printf("║   %.3f  ",pilotes[j].S2);
+			}
+			if (pilotes[j].S3 == 0){
+				printf("║    ...    ");
+			}
+			else {
+				printf("║   %.3f  ",pilotes[j].S3);
+			}
+			if (pilotes[j].tour == 0){
+				printf("║    ...   ");
+			}
+			else if (pilotes[j].tour < 100.000){
+				printf("║   %.3f ",pilotes[j].tour);
+			}
+			else {
+				printf("║  %.3f ",pilotes[j].tour);
+			}
+			printf("║    %.3f   ",pilotes[j].meilleurS1);
+			printf("║    %.3f   ",pilotes[j].meilleurS2);
+			printf("║    %.3f   ",pilotes[j].meilleurS3);
+			printf("║     %.3f   ",pilotes[j].meilleurTour);
+
+			if (pilotes[j].numeroTour < 10){
+				printf("║   %i  ",pilotes[j].numeroTour);
+			}
+			else {
+				printf("║  %i  ",pilotes[j].numeroTour);
+			}
+			if(pilotes[j].estPit != 0){
+				printf("║   %d   ",pilotes[j].estPit);
 		
-			if(fork() == 0){
+			}else{
+				printf("║   0   ");
+			}
+			if(pilotes[j].estCrash == 1){
+				printf("║    \033[01;31mX\033[0m    ║\n");
+		
+			}else{
+				printf("║         ║\n");
+			}			
+		}
+		printf("╚════════╩═══════════╩═══════════╩═══════════╩══════════╩═════════════╩═════════════╩═════════════╩═══════════════╩══════╩═══════╩═════════╝\n");
+		for(j = 0; j<  nombreVoiture ; j++){
 			
-				circuit = shmat(shmId,0,0);
-				if(circuit == (struct voiture*)-1){
-					printf("shmat = -1");
-					exit(1);
-				}
+			if(meilleurS1 > pilotes[j].meilleurS1){
+				idS1 = pilotes[j].ID;
+				meilleurS1 = pilotes[j].meilleurS1;
+			}
+			if(meilleurS2 > pilotes[j].meilleurS2){
+				idS2= pilotes[j].ID;
+				meilleurS2 = pilotes[j].meilleurS2;
+			}
+			if(meilleurS3 > pilotes[j].meilleurS3){
+				idS3 = pilotes[j].ID;
+				meilleurS3 = pilotes[j].meilleurS3;
+			}
+			if(meilleurTour > pilotes[j].meilleurTour){
+				idTour = pilotes[j].ID;
+				meilleurTour = pilotes[j].meilleurTour;
+			}
+		}
+		printf("╔════════════════════╦════╦═══════════╗\n");
+		if (idS1 < 10){
+			printf("║ Meilleur Secteur 1 ║  %d ║   \033[01;33m%.3f\033[0m  ║\n",idS1,meilleurS1);
+		}
+		else {
+			printf("║ Meilleur Secteur 1 ║ %d ║   \033[01;33m%.3f\033[0m  ║\n",idS1,meilleurS1);
+		}
+		if (idS2 < 10){
+			printf("║ Meilleur Secteur 2 ║  %d ║   \033[01;33m%.3f\033[0m  ║\n",idS2,meilleurS2);
+		}
+		else {
+			printf("║ Meilleur Secteur 2 ║ %d ║   \033[01;33m%.3f\033[0m  ║\n",idS2,meilleurS2);
+		}
+		if (idS3 < 10){
+			printf("║ Meilleur Secteur 3 ║  %d ║   \033[01;33m%.3f\033[0m  ║\n",idS3,meilleurS3);
+		}
+		else {
+			printf("║ Meilleur Secteur 3 ║ %d ║   \033[01;33m%.3f\033[0m  ║\n",idS3,meilleurS3);
+		}
+		if (idTour < 10){
+			printf("║    Meilleur Tour   ║  %d ║  \033[01;33m%.3f\033[0m  ║\n",idTour,meilleurTour);
+		}
+		else {
+			printf("║    Meilleur Tour   ║ %d ║  \033[01;33m%.3f\033[0m  ║\n",idTour,meilleurTour);
+		}
+		printf("╚════════════════════╩════╩═══════════╝\n");
+	}
+
+	for(i=0;i < nombreVoiture;i++){
+	
+		if(fork() == 0){
+		
+			circuit = shmat(shmId,0,0);
+			if(circuit == (struct voiture*)-1){
+				printf("shmat = -1");
+				exit(1);
+			}
+			
+			circuit[i].tempsEcoule = 0;
+			circuit[i].ID =	pilotes[i].ID;
+			circuit[i].meilleurS1 = 99;
+			circuit[i].meilleurS2 = 99;
+			circuit[i].meilleurS3 = 99;
+			circuit[i].meilleurTour = 999;
+			circuit[i].numeroTour = 0;
+			circuit[i].estCrash = 0;
+			circuit[i].estPit = 0;
+			
+			while(circuit[i].estCrash == 0 && circuit[i].tempsEcoule < tempsCourse){
+			
+				circuit[i].tour = 0;
 				
-				circuit[i].tempsEcoule = 0;
-				circuit[i].ID =	pilotes[i].ID;
-				circuit[i].meilleurS1 = 99;
-				circuit[i].meilleurS2 = 99;
-				circuit[i].meilleurS3 = 99;
-				circuit[i].meilleurTour = 999;
-				circuit[i].numeroTour = 0;
-				circuit[i].estCrash = 0;
-				circuit[i].estPit = 0;
-				
-				while(circuit[i].estCrash == 0 && circuit[i].tempsEcoule < tempsCourse){
-				
-					circuit[i].tour = 0;
+				if(crash() == 1){
 					
-					if(crash() == 1){
+					circuit[i].estCrash = 1;
+					circuit[i].S1 = 0;
+					circuit[i].S2 = 0;
+					circuit[i].S3 = 0;
+					
+					exit(0);
+				}else{
+					attendre(1);
+					circuit[i].S1 = secteur();
+					circuit[i].tempsEcoule += circuit[i].S1;
+					circuit[i].tour += circuit[i].S1; 
+					circuit[i].meilleurS1 = min(circuit[i].meilleurS1,circuit[i].S1);
+					signale(1);
+						if(crash() == 1){
+							
+							circuit[i].estCrash = 1;
+							circuit[i].S2 = 0;
+							circuit[i].S3 = 0;
+							
+							exit(0);
+						}else{
+							attendre(1);
+							circuit[i].S2 = secteur();
+							circuit[i].tempsEcoule += circuit[i].S2;
+							circuit[i].tour += circuit[i].S2;
+							circuit[i].meilleurS2 = min(circuit[i].meilleurS2,circuit[i].S2); 
+							signale(1);
 						
-						circuit[i].estCrash = 1;
-						circuit[i].S1 = 0;
-						circuit[i].S2 = 0;
-						circuit[i].S3 = 0;
-						
-						exit(0);
-					}else{
-						attendre(1);
-						circuit[i].S1 = secteur();
-						circuit[i].tempsEcoule += circuit[i].S1;
-						circuit[i].tour += circuit[i].S1; 
-						circuit[i].meilleurS1 = min(circuit[i].meilleurS1,circuit[i].S1);
-						signale(1);
+							if(pit() == 1){
+								
+								circuit[i].estPit += 1;
+								
+								usleep(600000);
+								attendre(1);
+								circuit[i].S3 = ((double)randomizer(20000,25000)/(double)1000) + secteur();
+								signale(1);
+							}else{
+								attendre(1);
+								circuit[i].S3 = secteur();
+								signale(1);					
+							}
 							if(crash() == 1){
 								
 								circuit[i].estCrash = 1;
-								circuit[i].S2 = 0;
 								circuit[i].S3 = 0;
 								
 								exit(0);
 							}else{
 								attendre(1);
-								circuit[i].S2 = secteur();
-								circuit[i].tempsEcoule += circuit[i].S2;
-								circuit[i].tour += circuit[i].S2;
-								circuit[i].meilleurS2 = min(circuit[i].meilleurS2,circuit[i].S2); 
+								circuit[i].tour += circuit[i].S3; 
+								circuit[i].tempsEcoule += circuit[i].S3;
+								circuit[i].meilleurS3 = min(circuit[i].meilleurS3,circuit[i].S3);
+								circuit[i].meilleurTour = min(circuit[i].meilleurTour,circuit[i].tour);
+								circuit[i].numeroTour++;
 								signale(1);
-							
-								if(pit() == 1){
-									
-									circuit[i].estPit += 1;
-									
-									usleep(600000);
-									attendre(1);
-									circuit[i].S3 = ((double)randomizer(20000,25000)/(double)1000) + secteur();
-									signale(1);
-								}else{
-									attendre(1);
-									circuit[i].S3 = secteur();
-									signale(1);					
-								}
-								if(crash() == 1){
-									
-									circuit[i].estCrash = 1;
-									circuit[i].S3 = 0;
-									
-									exit(0);
-								}else{
-									attendre(1);
-									circuit[i].tour += circuit[i].S3; 
-									circuit[i].tempsEcoule += circuit[i].S3;
-									circuit[i].meilleurS3 = min(circuit[i].meilleurS3,circuit[i].S3);
-									circuit[i].meilleurTour = min(circuit[i].meilleurTour,circuit[i].tour);
-									circuit[i].numeroTour++;
-									signale(1);
-									usleep(300000);
-								}
+								usleep(300000);
 							}
 						}
-				}
-				exit(0);
+					}
 			}
+			exit(0);
 		}
-		for(compteur = 0; compteur< ((int)tempsCourse/120*3); compteur++){
-			affichage(tri);
-			usleep(400000);
-		}
-		if(shmdt(circuit) == -1) {
-           		 printf("shmdt");
-          		  exit(1);
-     	}	
+	}
+	for(compteur = 0; compteur< ((int)tempsCourse/120*3); compteur++){
+		affichage(tri);
+		usleep(400000);
+	}
+	if(shmdt(circuit) == -1) {
+       		 printf("shmdt");
+      		  exit(1);
+ 	}	
 }
 
-//Début de code pour la création du fichier.
-//Il provient de mon code de Janvier mais il faut voir si il peut s'adapter.
-/* 
-int creationFichier(){
+
+int creationFichier(int etape, int nombreVoiture,struct voiture pilotes[20]){
 	FILE* fichier = NULL;
-	fichier = fopen("Résultat.txt", "w+");
+	switch (etape){									//Choix du fichier selon l'étape
+		case 1 : fichier = fopen("P1.txt", "w+");
+		break;
+		case 2 : fichier = fopen("P2.txt", "w+");
+		break;
+		case 3 : fichier = fopen("P3.txt", "w+");
+		break;
+		case 4 : fichier = fopen("Q1.txt", "w+");
+		break;
+		case 5 : fichier = fopen("Q2.txt", "w+");
+		break;
+		case 6 : fichier = fopen("Q3.txt", "w+");
+		break;
+		case 7 : fichier = fopen("Course.txt", "w+");
+		break;
+	}
 	if (fichier != NULL){
-    // On l'écrit dans le fichier
- 	fprintf(fichier,"╔═════════════╦════════╦════════╦════════╦═════════╦════════╦════════╦════════╦═════════╗\r\n║   Voiture   ║   S1   ║   S2   ║   S3   ║  Total  ║ BestS1 ║ BestS2 ║ BestS3 ║BestTotal║\r\n╠═════════════╬════════╬════════╬════════╬═════════╬════════╬════════╬════════╬═════════╣\r\n");
-	fprintf(fichier,"║ Voiture #0%d ║ ",1);
-	for(int j = 1; j<9;j++){
-		fprintf(fichier,"%.3lf ║%c", voiture[0][j], j==8? '\r\n' : ' ');
+ 	//Début de l'écriture  dans le fichier
+	fprintf(fichier,"test");
+ 	//trier(trieur);
+	double meilleurS1 = 9999999.0;
+	double meilleurS2 = 9999999.0;
+	double meilleurS3 = 9999999.0;
+	double meilleurTour = 99999.0;
+	int j;
+	int idS1;
+	int idS2;
+	int idS3;
+	int idTour;
+	fprintf(fichier,"%c[2J", 27);																	//Clear de la console
+	fprintf(fichier,"                     ╔════════════════════════════════════════════════════════════════════════════════════════════╗\n");
+	switch(etape)
+	{
+		case 1: fprintf(fichier,"                     ║                        \033[01;36mSéance d'essais libres du vendredi matin | P1\033[0m                       ║\n");
+			break;
+		case 2 :fprintf(fichier,"                     ║                     \033[01;36mSéance d'essais libres du vendredi après-midi | P2\033[0m                     ║\n");
+			break;
+		case 3 :fprintf(fichier,"                     ║                         \033[01;36mSéance d'essais libres du samedi matin | P3\033[0m                        ║\n");
+			break;
+		case 4 :fprintf(fichier,"                     ║                     \033[01;36mSéance de qualifications du samedi après-midi | Q1\033[0m                     ║\n");
+			break;	
+		case 5 :fprintf(fichier,"                     ║                     \033[01;36mSéance de qualifications du samedi après-midi | Q2\033[0m                     ║\n");
+			break;	
+		case 6 :fprintf(fichier,"                     ║                     \033[01;36mSéance de qualifications du samedi après-midi | Q3\033[0m                     ║\n");
+			break;			
+		case 7 :fprintf(fichier,"                     ║                                \033[01;36mCourse du dimanche après-midi\033[0m                               ║\n");
+			break;			
 	}
-	for(int i = 1; i<9;i++){													
-  		fprintf(fichier,"\r\n║ Voiture #0%d ║ ", i+1);
- 		for(int j =1; j<9;j++){
-     		fprintf(fichier,"%.3lf ║%c", voiture[i][j], j==8? '\r\n' : ' ');
-  		}
+	fprintf(fichier,"╔════════╦═══════════╬═══════════╦═══════════╦══════════╦═════════════╦═════════════╦═════════════╦═══════════════╬══════╦═══════╦═════════╗\n");
+	fprintf(fichier,"║ Numéro ║ Secteur 1 ║ Secteur 2 ║ Secteur 3 ║   Tour   ║ Meilleur S1 ║ Meilleur S2 ║ Meilleur S3 ║ Meilleur Tour ║ Tour ║ Arrêt ║ Abandon ║\n");
+	fprintf(fichier,"╠════════╬═══════════╬═══════════╬═══════════╬══════════╬═════════════╬═════════════╬═════════════╬═══════════════╬══════╬═══════╬═════════╣\n");
+	for(j = 0; j < nombreVoiture ; j++){
+		if (pilotes[j].ID < 10){
+			fprintf(fichier,"║    %d   ",pilotes[j].ID);
+		}
+		else {
+			fprintf(fichier,"║   %d   ",pilotes[j].ID);
+		}
+		if (pilotes[j].S1 == 0){
+			fprintf(fichier,"║    ...    ");
+		}
+		else {
+			fprintf(fichier,"║   %.3f  ",pilotes[j].S1);
+		}
+		if (pilotes[j].S2 == 0){
+			fprintf(fichier,"║    ...    ");
+		}
+		else {
+			fprintf(fichier,"║   %.3f  ",pilotes[j].S2);
+		}
+		if (pilotes[j].S3 == 0){
+			fprintf(fichier,"║    ...    ");
+		}
+		else {
+			fprintf(fichier,"║   %.3f  ",pilotes[j].S3);
+		}
+		if (pilotes[j].tour == 0){
+			fprintf(fichier,"║    ...   ");
+		}
+		else if (pilotes[j].tour < 100.000){
+			fprintf(fichier,"║   %.3f ",pilotes[j].tour);
+		}
+		else {
+			fprintf(fichier,"║  %.3f ",pilotes[j].tour);
+		}
+		fprintf(fichier,"║    %.3f   ",pilotes[j].meilleurS1);
+		fprintf(fichier,"║    %.3f   ",pilotes[j].meilleurS2);
+		fprintf(fichier,"║    %.3f   ",pilotes[j].meilleurS3);
+		fprintf(fichier,"║     %.3f   ",pilotes[j].meilleurTour);
+
+		if (pilotes[j].numeroTour < 10){
+			fprintf(fichier,"║   %i  ",pilotes[j].numeroTour);
+		}
+		else {
+			fprintf(fichier,"║  %i  ",pilotes[j].numeroTour);
+		}
+		if(pilotes[j].estPit != 0){
+			fprintf(fichier,"║   %d   ",pilotes[j].estPit);
+	
+		}else{
+			fprintf(fichier,"║   0   ");
+		}
+		if(pilotes[j].estCrash == 1){
+			fprintf(fichier,"║    \033[01;31mX\033[0m    ║\n");
+	
+		}else{
+			fprintf(fichier,"║         ║\n");
+		}			
 	}
-	for(int i = 10; i<21;i++){													
-  		fprintf(fichier,"\r\n║ Voiture #%d ║ ", i);
- 		for(int j =1; j<9;j++){
-     		fprintf(fichier,"%.3lf ║%c", voiture[i][j], j==8? '\r\n' : ' ');
-  		}
-	}
-	fprintf(fichier,"╚═════════════╩════════╩════════╩════════╩═════════╩════════╩════════╩════════╩═════════╝\r\n");
 	fclose(fichier);
  	}
 	return 0;
 }
-*/
 
 void ligneDepart(struct voiture automobile[20]){
 	printf("%c[2J", 27);																	//Clear de la console
@@ -621,20 +711,26 @@ int main (void){
 	if (reponsePromptEssai == 1){	
 		sleep(5);
 		choixCourse(20,-1,5400,tri,1); //Essais libres - P1
+		creationFichier(1,20,tri);
 		sleep(5);
 		choixCourse(20,-1,5400,tri,2); //Essais libres - P2
+		creationFichier(2,20,tri);
 		sleep(5);
 		choixCourse(20,-1,3600,tri,3); //Essais libres - P3
+		creationFichier(3,20,tri);
 		sleep(5);
 	}
 	int reponsePromptQualif = PromptEtape(2);
 	if (reponsePromptQualif == 1){
 		sleep(5);
 		choixCourse(20,-1,1080,tri,4); //Qualification - Q1
+		creationFichier(4,20,tri);
 		sleep(5);
 		choixCourse(15,-1,900,tri,5);  //Qualification - Q2
+		creationFichier(5,20,tri);
 		sleep(5);
 		choixCourse(10,-1,720,tri,6);  //Qualification - Q3
+		creationFichier(6,20,tri);
 		sleep(5);
 	}
 	int reponsePromptCourse = PromptEtape(3);
@@ -643,6 +739,7 @@ int main (void){
 		ligneDepart(tri);
 		sleep(10);
 		choixCourse(20,1,(tempsUnTour*nombreTourCourseFinale),tri,7);  //Course
+		creationFichier(7,20,tri);
 		sleep(5);
 	}
 	printf("%c[2J", 27);	
