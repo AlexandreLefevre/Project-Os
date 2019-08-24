@@ -1,3 +1,4 @@
+//Variable globale qui s'incrémente à chaque secteur de chaque voiture afin d'avoir une variable en plus dans randomizer()
 int compteurSecteur;
 
 //Structure d'une voiture
@@ -20,12 +21,12 @@ struct voiture{
 //Fonction qui procure le random
 int randomizer(int min,int max){
 	int nombre_aleatoire = 0;
-	srand(time(NULL) * (getpid()) * compteurSecteur);				// "^" signifie XOR
+	srand(time(NULL) * (getpid()) * compteurSecteur);
 	nombre_aleatoire = rand()%(max-min)+min;
 	return nombre_aleatoire;
 }
 
-//
+//Fonction pour générer le temps d'un secteur
 double secteur(){
 	if(!compteurSecteur){
 		compteurSecteur = 0;
@@ -43,9 +44,7 @@ int pit(){
 	return 0;
 }
 
-/**
-* Fonction qui génère le crash
-*/
+//Fonction qui génère le crash
 int crash(){
 	if(randomizer(0,500) == 1) return 1;		
 	return 0;
