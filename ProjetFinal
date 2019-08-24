@@ -382,6 +382,7 @@ int PromptEtape(int etape){
 	}
 }
 
+//Affichage grille des pilotes
 void grille(struct voiture automobile[20],int choix){
 	printf("%c[2J", 27);	//Clear de la console
 	if (choix == 1) {
@@ -440,6 +441,7 @@ void grille(struct voiture automobile[20],int choix){
 	}
 }
 
+//Création/Ecriture du fichier de resultat de l'étape
 int creationFichier(int etape, int nbrVoiture,struct voiture pilotes[20]){
 	FILE* fichier = NULL;
 	switch (etape){									//Choix du fichier selon l'étape
@@ -528,6 +530,7 @@ int creationFichier(int etape, int nbrVoiture,struct voiture pilotes[20]){
 	return 0;
 }
 
+//Fonction principale
 int main (void){
 	printf("\033[01;35mInitialisation de la simulation\033[0m");
 	fflush(stdout);	
