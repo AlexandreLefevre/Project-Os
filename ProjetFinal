@@ -20,6 +20,7 @@
 #define ANSI_COLOR_RESET   "\x1b[0m"
 #define ASCII_ESC 27					//Charactère d'échappement pour le clear de la console 		source : http://www.climagic.org/mirrors/VT100_Escape_Codes.html
 
+//Fonction de simulation d'étape
 void Simulation(int nombreVoiture,int tri,double tempsCourse,struct voiture pilotes[20],int typeCourse){
 	int i ;
 	int shmId;
@@ -43,8 +44,8 @@ void Simulation(int nombreVoiture,int tri,double tempsCourse,struct voiture pilo
 
 	/*
 	* Partie semaphore: 
-	*		Initation
-	*		Fonction wait, signal, Lecture, 
+	* Initation
+	* Fonction wait, signal, Lecture, 
 	*/
 	void initSem(){
 		key_t semCle;
@@ -93,7 +94,7 @@ void Simulation(int nombreVoiture,int tri,double tempsCourse,struct voiture pilo
 		commencerLecture();
 		memcpy(pilotes,circuit,nombreVoiture*sizeof(struct voiture));	
 		arreterLecture();	
-		if(param <= 0 ){ //trier voiture en fonction de leur meilleur tour
+		if(param <= 0 ){	//trier voiture en fonction de leur meilleur tour
 			for( a = 0; a < nombreVoiture ; a++){
 				for( b = 0; b < nombreVoiture - 1 ; b++){
 					if(pilotes[b].meilleurTour > pilotes[b+1].meilleurTour){
@@ -103,7 +104,7 @@ void Simulation(int nombreVoiture,int tri,double tempsCourse,struct voiture pilo
 					}		
 				}
 			}
-		}else{//trier en fonction du numéro de tour
+		}else{	//trier en fonction du numéro de tour
 			for( a = 0; a < nombreVoiture ; a++){
 				for( b = 0; b < nombreVoiture - 1; b++){
 					if(pilotes[b].numeroTour < pilotes[b+1].numeroTour){
@@ -305,6 +306,7 @@ void Simulation(int nombreVoiture,int tri,double tempsCourse,struct voiture pilo
  	}	
 }
 
+//Fonction pour demander si oui ou non l'étape suivante doit être simulée.
 int PromptEtape(int etape){
 	char choixPrompt;
 	printf("%c[2J", 27);	//Clear de la console
@@ -361,7 +363,7 @@ int PromptEtape(int etape){
 		case 3 : printf("\033[01;31mCourse annulée.\033[0m\n");
 			break;			
 		}
-		usleep(1000000);
+		usleep(5000000);
 		return 0;
 	}
 	else {
@@ -375,7 +377,7 @@ int PromptEtape(int etape){
 		case 3 : printf("\033[01;31mCourse annulée.\033[0m\n");
 			break;			
 		}
-		usleep(1000000);  
+		usleep(5000000);  
 		return 0;  
 	}
 }
